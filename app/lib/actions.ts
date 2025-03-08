@@ -1,22 +1,22 @@
-"use server";
+'use server';
 
-import { z } from "zod";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import postgres from "postgres";
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import postgres from 'postgres';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 const FormSchema = z.object({
   id: z.string(),
   customerId: z.string({
-    invalid_type_error: "Please select a customer.",
+    invalid_type_error: 'Please select a customer.',
   }),
   amount: z.coerce
     .number()
-    .gt(0, { message: "Please enter an amount greater than $0." }),
-  status: z.enum(["pending", "paid"], {
-    invalid_type_error: "Please select an invoice status.",
+    .gt(0, { message: 'Please enter an amount greater than $0.' }),
+  status: z.enum(['pending', 'paid'], {
+    invalid_type_error: 'Please select an invoice status.',
   }),
   date: z.string(),
 });
@@ -42,9 +42,9 @@ export async function createInvoice(
   formData: FormData
 ): Promise<State> {
   const rawFormData = {
-    customerId: formData.get("customerId"),
-    amount: formData.get("amount"),
-    status: formData.get("status"),
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
   };
 
   const validatedFields = CreateInvoice.safeParse(rawFormData);
@@ -52,7 +52,7 @@ export async function createInvoice(
     console.log(validatedFields.data);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Missing Fields. Failed to Create Invoice.",
+      message: 'Missing Fields. Failed to Create Invoice.',
       data: {
         customerId: rawFormData.customerId?.toString(),
         amount: rawFormData.amount?.toString(),
@@ -63,7 +63,7 @@ export async function createInvoice(
 
   const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
-  const date = new Date().toISOString().split("T")[0];
+  const date = new Date().toISOString().split('T')[0];
 
   try {
     await sql`
@@ -72,7 +72,7 @@ export async function createInvoice(
     `;
   } catch (error) {
     return {
-      message: "Database Error: Failed to Create Invoice.",
+      message: 'Database Error: Failed to Create Invoice.',
       data: {
         customerId: rawFormData.customerId?.toString(),
         amount: rawFormData.amount?.toString(),
@@ -81,17 +81,17 @@ export async function createInvoice(
     };
   }
 
-  revalidatePath("/dashboard/invoices");
-  redirect("/dashboard/invoices");
+  revalidatePath('/dashboard/invoices');
+  redirect('/dashboard/invoices');
 }
 
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
 export async function updateInvoice(id: string, formData: FormData) {
   const { customerId, amount, status } = UpdateInvoice.parse({
-    customerId: formData.get("customerId"),
-    amount: formData.get("amount"),
-    status: formData.get("status"),
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
   });
 
   const amountInCents = amount * 100;
@@ -106,12 +106,12 @@ export async function updateInvoice(id: string, formData: FormData) {
     console.error(error);
   }
 
-  revalidatePath("/dashboard/invoices");
-  redirect("/dashboard/invoices");
+  revalidatePath('/dashboard/invoices');
+  redirect('/dashboard/invoices');
 }
 
 export async function deleteInvoice(id: string) {
   await sql`DELETE FROM invoices WHERE id = ${id}`;
 
-  revalidatePath("/dashboard/invoices");
+  revalidatePath('/dashboard/invoices');
 }
